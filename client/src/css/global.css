@@ -1,0 +1,84 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Kanit:wght@600&family=Lato:wght@300;400&family=Michroma&family=Montserrat:wght@100;300;400;600;700&family=Open+Sans:wght@300;400;600;800&family=Poppins:wght@100;200;400;800;900&family=Rajdhani&family=Raleway:wght@400;600;700&family=Roboto+Mono:wght@300&display=swap"); /*
+    font-family: 'DM Sans', sans-serif;
+    font-family: 'Kanit', sans-serif;
+    font-family: 'Lato', sans-serif;
+    font-family: 'Michroma', sans-serif;
+    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open Sans', sans-serif;
+    font-family: 'Poppins', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
+    font-family: 'Raleway', sans-serif;
+    font-family: 'Roboto Mono', monospace;
+*/
+
+body {
+  background-color: #fafafa !important;
+  font-family: "Lato", sans-serif !important;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "dm sans", sans-serif;
+  font-weight: 600 !important;
+}
+
+button {
+  cursor: pointer;
+}
+
+p {
+  margin: 0 !important;
+}
+
+li {
+  list-style: none;
+}
+
+ul {
+  padding: 0 !important;
+}
+
+small {
+  color: #999;
+}
+
+footer {
+  margin-top: 100px;
+}
+
+nav {
+  margin: 0 !important;
+}
+
+.main,
+.hero {
+  margin-top: 100px !important;
+}
+
+@media screen and (max-width: 992px) {
+  .profiles {
+    margin-bottom: 50px !important;
+  }
+}
+
+/*icons*/
+.bi {
+  font-size: 25px;
+}
+
+input,
+textarea {
+  background-color: #f7f7f7 !important;
+  border: none !important;
+}

@@ -1,0 +1,309 @@
+const express = require('express');
+const router = express.Router();
+
+These two lines of code are used to import and instantiate the Express.js framework and its Router module respectively.
+Express.js is a web application framework for Node.js that simplifies the process of creating server-side applications by providing a wide range of features and functionality out of the box, such as middleware support, routing, and templating engines. The require('express') statement loads the Express.js module, which can then be used to create a new instance of the framework.
+The Router() method creates a new instance of the Express.js Router, which allows you to define specific routes for your application and specify how requests should be handled for each route. By using the Router object, you can define a set of routes separately and then use them in your application by simply mounting them to the main Express.js app.
+Together, these two lines allow you to create an instance of the Express.js framework and its Router module, which will allow you to create a server and define routes for your application.
+-----------------------------------
+
+Why models?
+
+In order to interact with a database there is the need to create a model.
+In Mongoose, a schema is a pre-defined data structure that defines the shape and format of documents in a MongoDB collection.
+The mongoose module is required in order to define a schema and create a model. The schema is created using the mongoose.Schema() function, which takes an object as an argument containing the fields and their data types that the documents in the collection should have.
+By defining a schema, you can ensure that all documents in a collection have the same fields and types, which can help with data consistency and integrity. In addition, you can define properties such as required and unique on each field to enforce certain validation rules.
+The mongoose.model() function is used to create a model for the schema, which can then be used to perform CRUD operations on the MongoDB collection. By exporting the model, you can import it in other parts of your application and use it to interact with the user collection in a consistent and structured way.
+-----------------------------------
+
+//init middleware
+app.use(express.json({ extended: false }));
+
+The code `app.use(express.json({ extended: false }));` initializes a middleware in an Express application.
+A middleware in Express is a function that has access to the incoming request (`req`) and outgoing response (`res`) objects in the application's request-response cycle. A middleware can execute any code, modify `req` and `res` objects, end the response, or call the next middleware in the stack.
+In this specific code, `express.json()` is a middleware that parses incoming requests with JSON payloads. Essentially, it takes the incoming JSON data and then parses it into a JavaScript object which can then be accessed in the application code. The `{ extended: false }` option specifies that we only want to parse simple JSON payloads, rather than more complex ones that might contain nested objects or arrays.
+In an Express application, middleware functions are executed in the sequential order they are declared in the code, and they can be mounted at a specific path using `app.use()` method. 
+Middleware is a crucial concept in Express because it provides a way to modularize code and create reusable functionality that can be applied across different routes or layers of the application. In the case of `express.json()`, it is a middleware that can be applied across all routes in an application, and it makes it easy to handle JSON payloads in a consistent way without having to write parsing code in every route.
+-----------------------------------
+
+Register user
+router.post('/', [
+    // First, we define some checks that will be used to validate the request body
+    check('name', 'Name is required.').not().isEmpty(),
+    check('email', 'Valid email is required.').isEmail(),
+    check('password', 'Please enter a password with 6 or more characters.').isLength({ min: 6 }),
+], async (req, res) => {
+    // This is the function that will be called when a POST request is made to the specified endpoint ("/")
+
+    // Next, we check if there were any validation errors in the request body
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    // If there were no validation errors, we can extract the name, email, and password from the request body
+    const { name, email, password } = req.body;
+
+    try {
+        // Here, we check if a user with the specified email already exists in the database
+        let user = await User.findOne({ email });
+        if (user) {
+            // If the user already exists, we return a 400 error with a message saying the user already exists
+            return res.status(400).json({ errors: [{ msg: 'User already exists.' }] });
+        };
+
+        // If the user does not already exist, we can generate their avatar image using the Gravatar service
+        const avatar = gravatar.url(email, {
+            s: '200',
+            r: 'pg',
+            d: 'mm'
+        });
+
+        // We then create a new user with the extracted name, email, avatar, and password
+        user = new User({
+            name,
+            email,
+            avatar,
+            password
+        })
+
+        // Next, we encrypt the user's password using the bcrypt algorithm
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+
+        // Once the password has been encrypted, we save the user to the database
+        await user.save();
+
+        // Finally, we generate a JSON Web Token (JWT) to authenticate the user's subsequent requests to the server
+        const payload = {
+            user: {
+                id: user.id,
+            }
+        };
+
+        // We sign the JWT with a secret key and an expiration time, and return the token as part of the response
+        
+        jwt.sign(payload, config.get('jwtSecret'), 
+        { expiresIn: 3600000 }, (err, token) => {...});: 
+        This line generates a JWT using the payload object, a secret key retrieved from the configuration object using config.get(), and an optional expiresIn parameter that specifies how long the token will be valid. 
+        The jwt.sign() method is asynchronous and accepts a callback function that will be called with an error or the generated token.
+        
+        if (err) throw err;: This line checks if an error was returned by the jwt.sign() method and throws it if it exists.
+
+        res.json({ token });: This line sends a JSON response to the client with a single property called token, which contains the generated JWT.
+
+        } catch (error) { console.error(error.message); return res.status(500).send('Server error'); }: This line is part of a try-catch block that catches any errors that may occur during the execution of the preceding code. If an error occurs, it is logged to the console and a 500 server error response is sent to the client.
+--------------------------------
+
+About AUTHORIZATION and TOKEN (middleware/auth)
+
+```
+const jsonwebtoken = require('jsonwebtoken');
+const config = require('config');
+```
+These lines import the necessary modules. `jsonwebtoken` is a library used for generating and verifying JSON Web Tokens (JWTs), and `config` is a module that allows access to application configuration files.
+
+```
+module.exports = function (req, res, next) {
+```
+This line exports a middleware function that will be used to authenticate and authorize incoming requests. 
+It takes three parameters: `req` (request), `res` (response), and `next` (a callback function to pass control to the next middleware in the stack).
+
+```
+    const token = req.header('x-auth-token');
+```
+This line retrieves the value of the `x-auth-token` header from the incoming request. This header is expected to contain the JWT token.
+
+```
+    if (!token) {
+        return res.status(401).json({ msg: 'No token, authorization denied' });
+    }
+```
+This block checks if the token is not present. If the token is missing, it means the user is not authenticated, 
+so a response with a status code of 401 (Unauthorized) and a JSON object containing the message `'No token, authorization denied'` is returned. 
+The execution of the middleware is stopped here.
+
+```
+    try {
+        const decoded = jwt.verify(token, config.get('jwtSecret'));
+```
+This line attempts to verify the JWT token using the `verify` function provided by the `jsonwebtoken` module. 
+It takes two arguments: the token itself and a secret key retrieved from the `jwtSecret` property in the application's configuration file.
+
+```
+        req.user = decoded.user;
+        next();
+```
+If the verification is successful, the decoded payload of the JWT is extracted and assigned to `req.user`. 
+This can be used in subsequent middleware or route handlers to access the authenticated user's information. 
+The `next()` function is called to pass control to the next middleware in the stack.
+
+Imagine you have a secret treasure box that only you can open with a special key. In this case, the JWT token is like that special key, and the treasure inside the box is the user's information.
+When the code successfully verifies the token (meaning it's the correct key for the treasure box), it opens the box and takes out the user's information. Then, it puts this information into a special backpack called `req.user`. This backpack can be carried around and accessed by other parts of the code, like other functions or features in the application.
+Once the user's information is safely stored in the backpack, the code says, "Okay, I've done my job here. Now it's time for the next person to do their job." So, it calls out to the next function in line, passing the backpack along to them.
+Think of it like a relay race where each runner (function) carries a baton (backpack) and passes it on to the next runner. In this case, the backpack (`req.user`) carries the user's information, and each function can use it to perform specific tasks or make decisions based on who the user is.
+
+By passing the backpack (`req.user`) to the next function, it ensures that the user's information is available for any subsequent operations that need it.
+
+
+```
+    } catch (error) {
+        console.error(error.msg);
+        res.status(401).json({ msg: 'Token not valid.' });
+    }
+```
+If an error occurs during the verification process, the code enters the `catch` block. 
+The error message is logged to the console using `console.error()`, and a response with a status code of 401 (Unauthorized) and a JSON object containing the message `'Token not valid.'` is returned.
+
+In summary, this code exports a middleware function that checks for the presence of a JWT token in the request header. 
+If the token is present, it verifies the token using a secret key from the configuration file. If the verification is successful, 
+the decoded user information is attached to the request object and the middleware passes control to the next function. 
+If an error occurs during verification or if the token is missing, appropriate error responses are sent back.
+-----------------------------------------
+
+Get user by TOKEN
+
+```
+router.get('/', auth, async (req, res) => {
+```
+
+This code defines a route handler for a GET request to the root URL ("/"). 
+The `router` object is likely an instance of an Express Router, which is used to handle HTTP requests in a modular way. 
+The `get()` function specifies that this route handler will be triggered when a GET request is made to the root URL.
+The second argument, `auth`, is another middleware function. 
+It means that before executing the route handler, the request will pass through the `auth` middleware function we discussed earlier. 
+This ensures that the user making the request is authenticated and authorized.
+The route handler itself is defined as an anonymous asynchronous function, which takes the `req` (request) and `res` (response) objects as parameters.
+
+```
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (error) {
+        console.error(error.msg);
+        res.status(500).send('Server error');
+    }
+});
+```
+
+Inside the route handler, there's a `try` block that contains the main logic to handle the request. 
+It attempts to find a user by their `id` using the `User` model, which is likely defined somewhere else in the codebase. 
+The `req.user.id` is the user ID extracted from the decoded JWT token that was stored in `req.user` by the `auth` middleware.
+The `User.findById()` function is an asynchronous operation that retrieves a user document from a database based on the provided `id`. 
+The `.select('-password')` part specifies that the `password` field should be excluded from the returned user object. This is a common practice to avoid exposing sensitive information.
+If the user is successfully found, the user object is sent as a JSON response using `res.json(user)`. This means that the server will respond with the user's information in JSON format.
+If any error occurs during the execution of the `try` block (e.g., database connection error), the code jumps to the `catch` block. The error message is logged to the console using `console.error()`, and the server responds with a status code of 500 (Internal Server Error) and the message "Server error" using `res.status(500).send('Server error')`. This is a generic error response indicating that something went wrong on the server side.
+In summary, this code defines a route handler for a GET request to the root URL. 
+It first ensures that the user making the request is authenticated by passing through the `auth` middleware. 
+Then, it attempts to retrieve the user's information from the database based on their ID extracted from the JWT token. 
+If successful, the user object is returned as a JSON response. If an error occurs, an appropriate error response is sent.
+-----------------------------------
+
+// @route    PUT api/profile/experience/:exp_id
+// @desc     delete profile experience
+// @access   Private
+router.delete('/experience/:exp_id', auth, async (req, res) => {
+    try {
+        //get profile of logged in user
+        const profile = await Profile.findOne({ user: req.user.id });
+
+        // Get the index of the experience to be deleted
+        const removeIndex = profile.experience.map(item => item.id).indexOf(req.params.exp_id);
+        profile.experience.splice(removeIndex, 1);
+
+        await profile.save();
+
+        res.json(profile);
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Server Error');
+    }
+})
+
+The code retrieves the profile of the logged-in user by searching for a profile document in the database where the user field matches the ID of the currently logged-in user (req.user.id).
+The code then determines the index of the experience to be deleted. It does this by mapping over the experience array in the profile and extracting the id field of each experience. It finds the index of the experience that matches req.params.exp_id (the ID provided in the route parameter).
+The code removes the experience from the experience array using the splice method. It uses the removeIndex (the index found in the previous step) and removes 1 item from that index.
+The updated profile is saved back to the database using await profile.save().
+Finally, the updated profile is sent as a JSON response using res.json(profile).
+--------------------------------------
+
+ABOUT REDUX (actions, reducers, ...)
+
+Actions:
+Actions are like messages that tell the computer what to do. They are small pieces of information that describe something that happened. For example, imagine you want to tell your friend to bring you a glass of water. The action would be a message that says, "Bring me a glass of water."
+In the code example you provided, actions are defined as functions. Each action has a type (e.g., REGISTER_SUCCESS, USER_LOADED) that describes the action and a payload that carries additional data (e.g., res.data).
+Reducers:
+Reducers are like little computers that listen for actions and decide what to do based on those actions. 
+They take the CURRENT STATE AND THE ACTION as input and PRODUCE A NEW STATE as output. 
+In our example, the reducer is like a magic box that transforms your room based on the actions you give it and the current state of the room.
+In the code example of the project, the reducer function (authReducer) takes the current state and an action as input. 
+It looks at the action type and performs specific operations to update the state accordingly. 
+For example, if the action type is USER_LOADED, the reducer updates the state to reflect that the user is loaded.
+Reducers are responsible for updating different pieces of information in the application's state based on the actions received.
+To summarize:
+    Actions are messages that describe something that happened.
+    Reducers are functions that listen for actions and update the state accordingly.
+In the provided code, actions define different operations such as loading a user, registering a user, and logging in or out. 
+The reducer (authReducer) listens to these actions and updates the state (initialState) based on the type of action received.
+Actions and reducers work together to manage and update the application's state, which holds all the important information needed to make the application work correctly.
+-----------------------------------
+
+PROXY ON THE CLIENT side
+
+In the `package.json` file for the client-side code, the `"proxy"` field is used to configure a proxy server for development.
+When you run the client-side application using Vite's development server (`npm run dev` or `vite`), the `"proxy"` field specifies the target server URL to which the client-side requests should be proxied. In this case, the proxy is set to `http://localhost:5000`, indicating that any requests made to the client-side application will be forwarded to the specified URL.
+This configuration is useful when you have a separate backend server (in this case, running on `http://localhost:5000`) and want to avoid CORS (Cross-Origin Resource Sharing) issues during development. By using a proxy, the client-side application can make requests to the same origin (the development server) and let the proxy server handle forwarding the requests to the actual backend server.
+For example, if your client-side code sends a request to `http://localhost:5000/api/posts`, the development server will forward that request to `http://localhost:5000/api/posts` on behalf of the client-side application.
+Note that the proxy is only active during development. When you build your client-side application for production using the `build` script (`npm run build` or `vite build`), the proxy configuration will not be used.
+Overall, the proxy configuration simplifies the development setup by handling CORS issues and enabling seamless communication between the client-side and server-side during development.
+------------------------------------
+
+CONFIGURING STORE IN CLIENT 
+1. `const initialState = {};` - This line is creating a variable called `initialState` and setting its value to an empty object.
+
+2. `const middleware = [thunk];` - This line is creating another variable called `middleware` and setting its value to an array that contains just one thing - the `thunk` we imported earlier.
+
+3. `const store = createStore(rootReducer, initialState, componseWithDevTools(applyMiddleware(...middleware)));` - This line is creating our Redux store using the `createStore` function we imported earlier. We're passing in three arguments: `rootReducer`, which is the function that will manage our app's state; `initialState`, which is the initial value of our state; and a function that is composed of `applyMiddleware(...middleware)` which applies our `thunk` middleware to our store as well as any other middleware that we might pass into the array.
+
+4. `export default store;` - Finally, this line is exporting our `store`, which we created in the previous line, so that we can use it in other parts of our app.
+------------------------------------
+
+WHAT IS A MIDDLEWARE?
+
+In the context of Redux, a middleware is a function that sits between a Redux application's dispatch function and the reducer function, 
+and can intercept and modify actions before they reach the reducer. Redux Thunk is a specific middleware that allows 
+you to write action creators that return a function instead of an action object, which can be useful for handling asynchronous actions, 
+delaying the dispatch of an action, or dispatching only if certain conditions are met. The inner function of a thunk receives the store methods `dispatch` 
+and `getState` as parameters, and can be used to perform async operations before dispatching an action.
+-------------------------------------
+
+import { SET_ALERT,REMOVE_ALERT } from "../actions.jsx/types";
+
+
+//it takes a piece of state and an action, that is going to get dispatched from the action file
+const initialState = [];
+
+export default function(state = initialState, action) {
+    const { type, payload } = action;
+
+    switch(type) {
+        case SET_ALERT:
+            return [...state, payload];
+        case REMOVE_ALERT: 
+            return state.filter(alert => alert.id !== payload);
+        default:
+            return state;
+    }
+}
+
+The given code is a JavaScript code snippet for a Redux reducer function that takes in a `state` and an `action` and returns a new `state`. Here are the details of each component:
+initialState is an array that represents the initial value of the `state` argument.
+The `export default function` declares the reducer function which takes the initial state as a default argument and the `action` parameter. The function will return a new state object for the store. 
+The `const { type, payload } = action;` sets two constants, `type` and `payload`, and destructures them from the `action` parameter. 
+The `switch` statement is used to perform different actions based on the `type` of the `action`. There are two cases in this reducer,  `SET_ALERT` and `REMOVE_ALERT`, with a default case for any other action that might occur.
+For the `SET_ALERT` case, the reducer returns a new state array by adding the `payload` object to the end of the current state. This is done with the spread operator `...state` to create a new array with all the existing alerts and the `payload` alert at the end.
+In the `REMOVE_ALERT` case, the reducer returns a new state array that filters out the alert with a matching `payload.id` from the existing state. Filter returns a new array with all the alerts that do not have the same id as the `payload` received. 
+If none of the above cases matches the action type, the default case simply returns the current state, unmodified.
+Overall, this reducer function updates the Redux store by adding or removing alerts depending on the action dispatched and returns a new state object while leaving the previous state object unchanged.
+--------------------------------------------
+
